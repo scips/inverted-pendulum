@@ -1,12 +1,13 @@
 (function($, Helper){
-    var View = $.InvertedPendulumView = function(parent, problem){
+    var View = $.InvertedPendulumView = function(parent, problem, agent){
         this.parent = parent;
         this.problem = problem;
+        this.agent = agent;
         this.update();
     };
     View.prototype.update = function(){
         var container = this.container();
-        new CanvasView(container, this.problem);
+        new CanvasView(container, this.problem, this.agent);
     };
     View.prototype.container = function(){
         if (!this._container) {
@@ -26,9 +27,10 @@
         'r': 5
     };
 
-    var CanvasView = function(parent, problem, options){
+    var CanvasView = function(parent, problem, agent, options){
         this.parent = parent;
         this.problem = problem;
+        this.agent = agent;
         this.options = Helper.extend(options || {}).by(canvasViewOptions);
         this.problem.addObserver(this.update.bind(this));
         this.update();
@@ -38,12 +40,13 @@
         var options = Helper.extend(this.options).by(this.problem.currentState());
         this.drawBorder(ctx,options);
         this.drawHorizon(ctx, options);
-	[-1, 0, 1].forEach(function(multiplier){
-	    var shadow = Helper.copy(options);
-	    shadow.position += multiplier * shadow.width;
+        this.drawFigures(ctx);
+        [-1, 0, 1].forEach(function(multiplier){
+            var shadow = Helper.copy(options);
+            shadow.position += multiplier * shadow.width;
             this.drawCart(ctx, shadow);
             this.drawPendulum(ctx, shadow);
-	}.bind(this));
+        }.bind(this));
     };
     CanvasView.prototype.container = function(){
         if (!this._container) {
@@ -112,6 +115,25 @@
         );
         ctx.arc(0, 0, options.r, Math.PI/2 - (options.angle - dphi), Math.PI, false);
         ctx.stroke();
+        ctx.restore();
+    }
+    CanvasView.prototype.drawFigures = function(ctx){
+        var figures = [];
+        this.agent.solver.getValueFunctions().forEach(function(el) { figures.push({title:'weight ',value:el.getWeight()}); } );
+        for (var i = figures.length - 1; i >= 0; i--) {
+            figures[i].title += i;
+        };
+        //output weights
+        ctx.save();
+        ctx.translate(0, this.options.height);
+        ctx.scale(1, -1);
+        ctx.font = "12px sans-serif";
+        var y = 100;
+        for (var i = figures.length - 1; i >= 0; i--) {
+            figure = figures[i];
+            ctx.fillText(figure.title+': '+figure.value, 10, y);
+            y-=24;
+        }
         ctx.restore();
     }
 })(window || module.exports, Helper);

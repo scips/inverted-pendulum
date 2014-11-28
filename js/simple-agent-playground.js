@@ -4,16 +4,15 @@
     var initialState = { angle: Math.PI/50, ended: false };
     var problem = world.createInvertedPendulum(initialState);
 
-    new View(document.getElementById('playground'), problem);
 
     var functionApproximator = new FunctionApproximator(
-    function(){return Math.random();},
-    0.001,
-    0.01,
-    function(elements) { return elements[Math.floor((Math.random() * elements.length))]; },
-    function(weights) {
-        return 1/weights.reduce(function (prev, current) { return Math.max(prev, current)}, -Infinity)
-    }
+        function(){return Math.random();},
+        0.001,
+        0.01,
+        function(elements) { return elements[Math.floor((Math.random() * elements.length))]; },
+        function(weights) {
+            return 1/weights.reduce(function (prev, current) { return Math.max(prev, current)}, -Infinity)
+        }
     );
 
     functionApproximator.addValueFunction(
@@ -23,12 +22,30 @@
     );
     functionApproximator.addValueFunction(
         functionApproximator.createValueFunction(function(s) {
-            console.log(s);
-            return -10000.0*Math.abs(s.angle);
+            var toReturnValue =-100.0*Math.abs(s.angle);
+            console.log('angle : '+toReturnValue);
+            return toReturnValue;
+        })
+    );
+    functionApproximator.addValueFunction(
+        functionApproximator.createValueFunction(function(s) {
+            var toReturnValue = -100.0*Math.abs(s.angularVelocity);
+            console.log('anglevelocity: '+toReturnValue);
+            return toReturnValue;
+        })
+    );
+    functionApproximator.addValueFunction(
+        functionApproximator.createValueFunction(function(s) {
+            var toReturnValue = -0.001*Math.abs(s.velocity);
+            console.log('anglevelocity: '+toReturnValue);
+            return toReturnValue;
         })
     );
 
     var agent = new SimpleAgent(problem, functionApproximator);
+
+    new View(document.getElementById('playground'), problem, agent);
+
     var count = 0;
     var framecount = 0;
     function run(){
@@ -44,10 +61,6 @@
                 count++;
             } else {
                 agent.reevaluateActions();
-                var log = "";
-                agent.solver.getValueFunctions().forEach(function(el) { log += " " +  el.getWeight(); } );
-                //log weights
-                //console.log(log);
                 problem.currentState(initialState);
             }
         }
